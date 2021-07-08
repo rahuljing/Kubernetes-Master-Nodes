@@ -34,6 +34,8 @@ systemctl enable docker
 #Setup open GPG key. This is required for intra cluster communication. It will be added to source key on this node i.e When k8s sends signed info to Our host,
 It is goint to accept those information because this open GPG Key is present in the source key.
 
+
+
 sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add 
 
 #Edit source list file (apt-get install nano)
@@ -84,3 +86,38 @@ kubeadm join 172.31.10.31:6443 --token 13pr5x.3vfyu7mufes9efle --discovery-token
 kubectl get nodes
 
 ***********************END*************************************
+
+
+#These steps demonstrates how you can deploy a simple application that connects to the Redis service. The sample application used in this tutorial is a condensed form of the Kubernetes sample guestbook application.
+
+#To deploy the sample application:
+
+Deploy the Redis master pods and service by running the following commands:
+
+kubectl apply -f https://k8s.io/examples/application/guestbook/redis-master-deployment.yaml
+kubectl apply -f https://k8s.io/examples/application/guestbook/redis-master-service.yaml
+
+#Deploy the Redis agents by running the following commands:
+
+kubectl apply -f https://k8s.io/examples/application/guestbook/redis-slave-deployment.yaml
+kubectl apply -f https://k8s.io/examples/application/guestbook/redis-slave-service.yaml
+
+#Deploy the webapp frontend by running the following command:
+
+kubectl apply -f https://k8s.io/examples/application/guestbook/frontend-deployment.yaml
+
+#Deploy the load balancer for the sample application using a cloud LoadBalancer service type instead of a NodePort service type by running the following command:
+
+curl -L https://k8s.io/examples/application/guestbook/frontend-service.yaml | sed "s@NodePort@LoadBalancer@" | kubectl apply -f -
+
+This step has been specifically modified to optimize load balancing for a default Konvoy cluster.
+
+#Check the availability of the deployed service by running the following command:
+
+kubectl get pods -l app=guestbook -l tier=frontend  # check the app pods
+kubectl get service frontend                        # check the load balancer
+
+
+The service properties provide the name of the load balancer. You can connect to the application by accessing that load balancer address in your web browser.
+
+Because this sample deployment creates a cloud load balancer, you should keep in mind that creating the load balancer can up to a few minutes. You also might experience a slight delay before it is running properly due to DNS propagation and synchronization.
